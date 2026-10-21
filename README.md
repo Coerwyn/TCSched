@@ -43,7 +43,7 @@ The QR code encodes the address you opened the organizer page with, and a phone 
 dotnet test
 ```
 
-69 integration tests run the real API against a temporary SQLite file. They cover validation, per-game limits, time zones and DST, ICS output, duplicates, full events, and concurrent last-seat races.
+92 integration tests run the real API against a temporary SQLite file. They cover validation, per-game limits, time zones and DST, ICS output, duplicates, full events, and concurrent last-seat races.
 
 ## Try the flow
 
@@ -88,10 +88,10 @@ More detail: [Game templates](#game-templates) below and [docs/DESIGN.md](docs/D
 **Faked or simplified:** one store, configured in `appsettings.json`; no auth, so `/organizer` is open (a single trusted organizer is assumed); demo data is seeded; registration needs only a name. The UI is plain on purpose.
 
 **Testing I faked:**
-- **QR scanning:** never done with a real phone camera. Instead I checked that the QR image encodes the registration URL and opened that URL in a separate browser tab, the way a phone would after scanning. Reaching the app from a phone over the LAN is documented above but not verified.
-- **Docker deployment:** `docker compose up` was not run, because Docker wasn't available on the build machine. Instead I ran the same Release publish output with the built SPA in `wwwroot`, in Production mode on port 8080 with the container's environment variables. Every SPA route, static assets, the API, the JSON 404 for unknown API paths and demo seeding all worked. The image build itself (Node and .NET stages, the non-root user, the `/data` volume) has not been exercised.
+- **QR scanning:** my phone's camera decoded the QR code to the correct registration URL, but I couldn't open that URL from the phone. I also opened the same URL in a separate browser tab, the way a phone would after scanning.
+- **Docker deployment:** `docker compose up` was not run, because I don't have Docker installed. Instead I ran the same Release publish output with the built SPA in `wwwroot`, in Production mode on port 8080 with the container's environment variables. Every SPA route, static assets, the API, the JSON 404 for unknown API paths and demo seeding all worked. The image build itself (Node and .NET stages, the non-root user, the `/data` volume) has not been exercised.
 
-**Cut:** editing or cancelling events, unregistering, waitlists, check-in, rate limiting and bot protection on the public registration endpoint, frontend unit and e2e tests (the API has 69 integration tests, and the UI flow was checked by hand in a browser), OpenAPI-generated TS types, and an accessibility pass.
+**Cut:** editing or cancelling events, unregistering, waitlists, check-in, rate limiting and bot protection on the public registration endpoint, frontend unit and e2e tests (the API has 92 integration tests, and the UI flow was checked by hand in a browser), OpenAPI-generated TS types, and an accessibility pass.
 
 **Next, in order:**
 1. **Admin section for game templates.** An `/admin/templates` list page and one create/edit form, backed by `POST/PUT/DELETE /api/templates`, reusing the startup validator. The groundwork is already there: events copy their template values, so edits never change scheduled events; seeding is insert-only, so admin edits survive restarts; deleting would be refused (`409 TEMPLATE_IN_USE`) while events use a template, with archiving after that. Designed in [docs/DESIGN.md §15](docs/DESIGN.md).
@@ -101,7 +101,7 @@ More detail: [Game templates](#game-templates) below and [docs/DESIGN.md](docs/D
 
 ## Game templates
 
-Games (Magic: The Gathering, Pokémon TCG, Disney Lorcana) are data, not code. They live in the `GameTemplates` table and are seeded from [src/TCSched.Api/Templates/templates.json](src/TCSched.Api/Templates/templates.json).
+Games (Magic: The Gathering, Pokémon TCG, Disney Lorcana) are data stored in SQLite. They live in the `GameTemplates` table and are seeded from [src/TCSched.Api/Templates/templates.json](src/TCSched.Api/Templates/templates.json).
 
 **Seeding guard:** at startup the app validates `templates.json` (it won't start if the file is invalid) and then **inserts only templates whose `id` isn't already in the database**. Existing templates are never updated or overwritten, even if the JSON for them changed.
 
@@ -126,7 +126,7 @@ dotnet run --project src/TCSched.Api -- templates sync --dry-run
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/store` | Store name, address, time zone |
+| GET | `/api/store` | Store name, address, time zone, default game |
 | GET | `/api/templates` | Game templates |
 | GET | `/api/events?from=&to=` | Events starting in range |
 | POST | `/api/events` | `{ name, gameTemplateId, format?, startsAtLocal: "2026-11-07T18:00", capacity? }` |
@@ -148,6 +148,9 @@ docs/                REQUIREMENTS.md, DESIGN.md (design/dev doc with decisions a
 
 ## AI usage
 
-I used **Claude Code** (Claude Opus) as a pair programmer throughout: breaking down the requirements, writing the design doc, the API and tests, the Vue pages, and checking the full flow in a browser. A **Sonnet subagent** scaffolded the Vite/Vue project in parallel while the .NET side was set up. I made the scope and design calls: one app with organizer and player sections instead of two apps, phasing the template admin section out of the core build, keeping EF Core, and insert-only template seeding. Every generated change was reviewed, built and tested before it was committed. A running log is in [docs/DESIGN.md §14](docs/DESIGN.md).
+I used **Claude Code** (Claude Opus) as a pair programmer throughout: breaking down the requirements, writing the design doc, the API and tests, the Vue pages, and checking the full flow in a browser. A **Sonnet subagent** scaffolded the Vite/Vue project in parallel while the .NET side was set up. I made the scope and design calls: one app with organizer and player sections instead of two apps, phasing the template admin section out of the core build, keeping EF Core, and insert-only template seeding. Every generated change was reviewed, built and tested before it was committed. A running log is in [docs/DESIGN.md §14](docs/DESIGN.md). I also used the GitHub Copilot app with the GPT 5.6 Sol model to review the project against the requirements and look for code issues. It reported four issues: three were real and fixed (tests that would have started failing in 2027, a 500 on a bad base URL, a crash on malformed seed JSON), and one described code that had already been fixed.
 
 **Example I had to fix:** EF Core's generated migration for snapshotting `MinPlayers` onto events added the column with a default of `0`, then added a `CHECK (MinPlayers >= 1)`. On SQLite that table rebuild fails for any database that already has events. The tests didn't catch it because they always start from an empty database. I added a backfill from each event's template (clamped to its capacity) before the constraint, and checked it by upgrading a database that already had an event. Others: the scaffold mixed FullCalendar majors 6 and 7, and was pinned to 6; and a browser run showed that the `.ics` registration link pointed at the API's port instead of the app's, fixed with forwarded headers and a test.
+
+I steer the AI while it works, based on its output, what I see in the running app, and my own manual testing. For example, I questioned EF Core as too heavy for the project, caught the create form labeling January dates as PDT, and kept the template admin section out of the core build. Catching problems early means fewer corrections later.
+
