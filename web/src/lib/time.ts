@@ -14,6 +14,12 @@ export function formatTime(utcIso: string, timeZone: string): string {
     .format(new Date(utcIso))
 }
 
+/** The zone's name at an instant: "CDT" (short) or "Central Daylight Time" (long). */
+export function zoneName(timeZone: string, at: Date = new Date(), style: 'short' | 'long' = 'short'): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: style })
+    .formatToParts(at).find((p) => p.type === 'timeZoneName')?.value ?? timeZone
+}
+
 /** "Fri, Jan 15, 2027, 6:00 PM – 10:00 PM CST" */
 export function formatRange(startUtc: string, endUtc: string, timeZone: string): string {
   const zone = new Intl.DateTimeFormat(undefined, { timeZone, timeZoneName: 'short' })

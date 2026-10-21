@@ -30,6 +30,7 @@ public class SmokeTests(TestAppFactory factory) : IClassFixture<TestAppFactory>
 
         Assert.NotNull(store);
         Assert.Equal("America/Chicago", store.TimeZone);
+        Assert.Equal("mtg", store.DefaultGameTemplateId);
         Assert.False(string.IsNullOrWhiteSpace(store.Address));
     }
 }

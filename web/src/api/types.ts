@@ -15,6 +15,8 @@ export interface Store {
   address: string
   /** IANA time zone, e.g. "America/Chicago". All times are shown in this zone. */
   timeZone: string
+  /** Game pre-selected on the create form; falls back to the first template if unset/unknown. */
+  defaultGameTemplateId?: string | null
 }
 
 export interface GameTemplate {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using TCSched.Api.Configuration;
 using TCSched.Api.Data;
@@ -60,7 +61,9 @@ public static class EventEndpoints
         if (!clock.TryLocalToUtc(req.StartsAtLocal, out var startsAtUtc, out var timeError))
             errors["startsAtLocal"] = [timeError!];
         else if (startsAtUtc <= clock.UtcNow)
-            errors["startsAtLocal"] = ["Start time must be in the future."];
+            errors["startsAtLocal"] = [string.Create(CultureInfo.InvariantCulture,
+                $"Start time must be in the future. It's now {clock.LocalNow:ddd MMM d, h:mm tt} at the store ({clock.TimeZone.Id})."),
+            ];
 
         if (string.IsNullOrWhiteSpace(req.GameTemplateId))
         {

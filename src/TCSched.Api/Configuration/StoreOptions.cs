@@ -18,4 +18,10 @@ public sealed class StoreOptions
     /// the request's own scheme and host are used.
     /// </summary>
     public string? PublicBaseUrl { get; set; }
+
+    /// <summary>
+    /// Template id pre-selected on the create-event form (e.g. "mtg"). Optional: if it's missing
+    /// or unknown, the UI uses the first template. Store config, not game logic.
+    /// </summary>
+    public string? DefaultGameTemplateId { get; set; }
 }

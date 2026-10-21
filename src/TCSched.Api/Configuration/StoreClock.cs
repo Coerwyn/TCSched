@@ -44,6 +44,9 @@ public sealed class StoreClock(IOptions<StoreOptions> options, TimeProvider time
     public DateTime LocalToUtc(DateTime wall) =>
         TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(wall, DateTimeKind.Unspecified), TimeZone);
 
+    /// <summary>The current wall-clock time at the store.</summary>
+    public DateTime LocalNow => TimeZoneInfo.ConvertTimeFromUtc(UtcNow, TimeZone);
+
     /// <summary>Today's date on the store's clock.</summary>
     public DateOnly LocalToday => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(UtcNow, TimeZone));
 }

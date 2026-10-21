@@ -86,6 +86,15 @@ public class EventEndpointTests(TestAppFactory factory) : IClassFixture<TestAppF
     }
 
     [Fact]
+    public async Task Past_start_error_says_what_time_it_is_at_the_store()
+    {
+        var res = await _client.CreateEventAsync(Fnm(startsAtLocal: "2020-01-01T18:00"));
+
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.Contains("at the store (America/Chicago)", body);
+    }
+
+    [Fact]
     public async Task Unknown_template_is_rejected()
     {
         var res = await _client.CreateEventAsync(Fnm(template: "chess"));

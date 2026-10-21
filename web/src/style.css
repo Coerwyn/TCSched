@@ -58,3 +58,4 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   .grid { grid-template-columns: 1fr; }
   .form .row { grid-template-columns: 1fr; }
 }
+p.notice { background: #fffbeb; border: 1px solid #f59e0b; border-radius: 6px; padding: .4rem .6rem; margin: 0; }
