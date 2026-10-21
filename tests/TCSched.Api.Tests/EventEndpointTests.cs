@@ -86,6 +86,15 @@ public class EventEndpointTests(TestAppFactory factory) : IClassFixture<TestAppF
     }
 
     [Fact]
+    public async Task Tests_run_on_the_fixed_clock_not_the_real_one()
+    {
+        // TestAppFactory.Now is 2026-06-01 12:00 PDT. That date is already past in real life, so
+        // these results only hold if the API uses the injected clock.
+        Assert.Equal(HttpStatusCode.Created, (await _client.CreateEventAsync(Fnm(startsAtLocal: "2026-06-01T13:00"))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.CreateEventAsync(Fnm(startsAtLocal: "2026-06-01T11:00"))).StatusCode);
+    }
+
+    [Fact]
     public async Task Past_start_error_says_what_time_it_is_at_the_store()
     {
         var res = await _client.CreateEventAsync(Fnm(startsAtLocal: "2020-01-01T18:00"));

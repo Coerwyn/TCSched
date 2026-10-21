@@ -69,6 +69,34 @@ public class TemplateSeedingTests
         Assert.Contains("Max capacity cannot exceed 30", ex.ToString());
     }
 
+    private static string WriteRawSeedFile(string json)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"tcsched-templates-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, json);
+        return path;
+    }
+
+    private const string ValidEntry =
+        """{ "id": "fab", "name": "Flesh and Blood", "formats": ["Blitz"], "defaultFormat": "Blitz", "defaultDurationMinutes": 120, "defaultCapacity": 8, "maxCapacity": 16, "minPlayers": 2 }""";
+
+    [Theory]
+    [InlineData("[ " + ValidEntry + ", null ]", "entry #2: is null")]
+    [InlineData("""[ { "id": "fab", "name": "Flesh and Blood", "formats": null, "defaultFormat": "Blitz", "defaultDurationMinutes": 120, "defaultCapacity": 8, "maxCapacity": 16, "minPlayers": 2 } ]""", "At least one format is required")]
+    [InlineData("""[ { "id": "fab", "name": "Flesh and Blood", "formats": ["Blitz", null], "defaultFormat": "Blitz", "defaultDurationMinutes": 120, "defaultCapacity": 8, "maxCapacity": 16, "minPlayers": 2 } ]""", "formats cannot be blank")]
+    [InlineData("""[ { "id": "fab", "name": "Flesh and Blood", "formats": ["Blitz"], "defaultFormat": null, "defaultDurationMinutes": 120, "defaultCapacity": 8, "maxCapacity": 16, "minPlayers": 2 } ]""", "Default format must be one of the formats")]
+    [InlineData("""[ { "name": "No id", "formats": ["Blitz"], "defaultFormat": "Blitz" } ]""", "Invalid template seed file")]
+    [InlineData("[ { not json", "Invalid template seed file")]
+    [InlineData("[]", "non-empty JSON array")]
+    [InlineData("null", "non-empty JSON array")]
+    public void Malformed_seed_file_fails_with_a_descriptive_error_not_a_crash(string json, string expected)
+    {
+        var path = WriteRawSeedFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => DbInitializer.LoadTemplates(path));
+
+        Assert.Contains(expected, ex.Message);
+    }
+
     [Fact]
     public async Task Seeding_is_insert_only_and_never_overwrites_existing_templates()
     {

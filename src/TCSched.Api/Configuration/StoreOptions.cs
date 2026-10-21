@@ -19,6 +19,13 @@ public sealed class StoreOptions
     /// </summary>
     public string? PublicBaseUrl { get; set; }
 
+    /// <summary>True when <see cref="PublicBaseUrl"/> is blank or an absolute http/https URL.</summary>
+    public bool HasValidPublicBaseUrl() =>
+        string.IsNullOrWhiteSpace(PublicBaseUrl)
+        || (Uri.TryCreate(PublicBaseUrl.Trim(), UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment));
+
     /// <summary>
     /// Template id pre-selected on the create-event form (e.g. "mtg"). Optional: if it's missing
     /// or unknown, the UI uses the first template. Store config, not game logic.

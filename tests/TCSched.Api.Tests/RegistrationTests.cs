@@ -103,8 +103,8 @@ public class RegistrationTests(TestAppFactory factory) : IClassFixture<TestAppFa
             db.Events.Add(new Event
             {
                 Id = id, Name = "Earlier today", GameTemplateId = "mtg", Format = "Commander",
-                StartsAtUtc = DateTime.UtcNow.AddMinutes(-5), DurationMinutes = 240,
-                Capacity = 8, MinPlayers = 4, CreatedAtUtc = DateTime.UtcNow.AddDays(-1),
+                StartsAtUtc = TestAppFactory.Now.UtcDateTime.AddMinutes(-5), DurationMinutes = 240,
+                Capacity = 8, MinPlayers = 4, CreatedAtUtc = TestAppFactory.Now.UtcDateTime.AddDays(-1),
             });
             await db.SaveChangesAsync();
         });

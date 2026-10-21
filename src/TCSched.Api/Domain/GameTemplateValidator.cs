@@ -28,12 +28,14 @@ public static partial class GameTemplateValidator
         if (string.IsNullOrWhiteSpace(t.Name) || t.Name.Trim().Length > MaxNameLength)
             Add(nameof(t.Name), $"Name is required and must be at most {MaxNameLength} characters.");
 
-        if (t.Formats.Count == 0 || t.Formats.Any(string.IsNullOrWhiteSpace))
+        // Templates can come from JSON, where "formats": null or a null entry is possible.
+        IReadOnlyList<string?> formats = t.Formats ?? [];
+        if (formats.Count == 0 || formats.Any(string.IsNullOrWhiteSpace))
             Add(nameof(t.Formats), "At least one format is required, and formats cannot be blank.");
-        else if (t.Formats.Distinct(StringComparer.OrdinalIgnoreCase).Count() != t.Formats.Count)
+        else if (formats.Distinct(StringComparer.OrdinalIgnoreCase).Count() != formats.Count)
             Add(nameof(t.Formats), "Formats must be unique.");
 
-        if (!t.Formats.Contains(t.DefaultFormat))
+        if (string.IsNullOrWhiteSpace(t.DefaultFormat) || !formats.Contains(t.DefaultFormat))
             Add(nameof(t.DefaultFormat), "Default format must be one of the formats.");
 
         if (t.DefaultDurationMinutes is < MinDurationMinutes or > MaxDurationMinutes)

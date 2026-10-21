@@ -12,6 +12,7 @@ builder.Services
     .Bind(builder.Configuration.GetSection(StoreOptions.SectionName))
     .ValidateDataAnnotations()
     .Validate(o => TimeZoneInfo.TryFindSystemTimeZoneById(o.TimeZone, out _), "Store:TimeZone is not a known time zone id.")
+    .Validate(o => o.HasValidPublicBaseUrl(), "Store:PublicBaseUrl must be blank or an absolute http(s) URL, e.g. http://192.168.1.20:8080.")
     .ValidateOnStart();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<StoreClock>();

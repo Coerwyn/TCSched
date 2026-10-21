@@ -26,7 +26,8 @@ public class SampleDataTests
 
         var events = await client.GetFromJsonAsync<List<EventDto>>("/api/events");
         Assert.Equal(5, events!.Count);
-        Assert.All(events, e => Assert.True(e.StartsAtUtc > DateTime.UtcNow && e.StartsAtUtc < DateTime.UtcNow.AddDays(8)));
+        var now = TestAppFactory.Now.UtcDateTime;
+        Assert.All(events, e => Assert.True(e.StartsAtUtc > now && e.StartsAtUtc < now.AddDays(8)));
         Assert.Contains(events, e => e.IsFull);
         Assert.Contains(events, e => e.SeatsLeft == 1);
 

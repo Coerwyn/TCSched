@@ -52,14 +52,28 @@ public static class DbInitializer
         if (!File.Exists(path))
             throw new InvalidOperationException($"Template seed file not found: {path}");
 
-        var templates = JsonSerializer.Deserialize<List<GameTemplate>>(File.ReadAllText(path), Json)
-            ?? throw new InvalidOperationException($"Template seed file is empty: {path}");
+        List<GameTemplate?>? parsed;
+        try
+        {
+            parsed = JsonSerializer.Deserialize<List<GameTemplate?>>(File.ReadAllText(path), Json);
+        }
+        catch (JsonException ex)
+        {
+            // Bad syntax, wrong types, or a missing required property (id, name, defaultFormat).
+            throw new InvalidOperationException($"Invalid template seed file {path}: {ex.Message}", ex);
+        }
+        if (parsed is null || parsed.Count == 0)
+            throw new InvalidOperationException($"Invalid template seed file {path}: it must be a non-empty JSON array of templates.");
 
-        var problems = templates
-            .Select(t => (t.Id, Errors: GameTemplateValidator.Validate(t)))
-            .Where(x => x.Errors.Count > 0)
-            .Select(x => $"'{x.Id}': {string.Join(" ", x.Errors.SelectMany(e => e.Value))}")
+        var problems = parsed
+            .Select((t, i) => t is null
+                ? $"entry #{i + 1}: is null."
+                : GameTemplateValidator.Validate(t) is { Count: > 0 } errors
+                    ? $"'{t.Id}' (entry #{i + 1}): {string.Join(" ", errors.SelectMany(e => e.Value))}"
+                    : null)
+            .OfType<string>()
             .ToList();
+        var templates = parsed.OfType<GameTemplate>().ToList();
 
         var duplicateIds = templates.GroupBy(t => t.Id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
         if (duplicateIds.Count > 0)

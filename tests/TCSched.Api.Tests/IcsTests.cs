@@ -73,19 +73,48 @@ public class IcsTests(TestAppFactory factory) : IClassFixture<TestAppFactory>
 
 public class IcsConfiguredBaseUrlTests
 {
-    private sealed class Factory : TestAppFactory
+    private sealed class Factory(string publicBaseUrl) : TestAppFactory
     {
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
             base.ConfigureWebHost(builder);
-            builder.UseSetting("Store:PublicBaseUrl", "http://192.168.1.20:5173/");
+            builder.UseSetting("Store:PublicBaseUrl", publicBaseUrl);
         }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Blank_public_base_url_falls_back_to_the_request_host(string blank)
+    {
+        using var factory = new Factory(blank);
+        var client = factory.CreateClient();
+        var ev = await client.CreateEventOkAsync(new("FNM", "mtg", null, "2027-01-15T18:00", null));
+
+        var res = await client.GetAsync($"/api/events/{ev.Id}/calendar.ics");
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.Equal(new Uri($"http://localhost/e/{ev.Id}"), Calendar.Load(await res.Content.ReadAsStringAsync())!.Events.Single().Url);
+    }
+
+    [Theory]
+    [InlineData("192.168.1.20:8080")]   // no scheme
+    [InlineData("/relative")]
+    [InlineData("ftp://example.com")]
+    [InlineData("not a url")]
+    public void Invalid_public_base_url_stops_startup(string invalid)
+    {
+        using var factory = new Factory(invalid);
+
+        var ex = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+
+        Assert.Contains("Store:PublicBaseUrl must be blank or an absolute http(s) URL", ex.ToString());
     }
 
     [Fact]
     public async Task Registration_link_uses_configured_public_base_url()
     {
-        using var factory = new Factory();
+        using var factory = new Factory("http://192.168.1.20:5173/");
         var client = factory.CreateClient();
         var ev = await client.CreateEventOkAsync(new("FNM", "mtg", null, "2027-01-15T18:00", null));
 

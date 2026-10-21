@@ -29,7 +29,10 @@ public static partial class IcsEndpoints
         if (ev is null)
             return ApiProblems.NotFound("Event");
 
-        var baseUrl = store.Value.PublicBaseUrl?.TrimEnd('/') ?? $"{request.Scheme}://{request.Host}";
+        // Blank means "not set". A non-blank value was validated as an absolute http(s) URL at startup.
+        var baseUrl = string.IsNullOrWhiteSpace(store.Value.PublicBaseUrl)
+            ? $"{request.Scheme}://{request.Host}"
+            : store.Value.PublicBaseUrl.Trim().TrimEnd('/');
         var ics = Build(ev, ev.GameTemplate!.Name, store.Value, $"{baseUrl}/e/{ev.Id}", clock.UtcNow);
 
         var local = TimeZoneInfo.ConvertTimeFromUtc(ev.StartsAtUtc, clock.TimeZone);
