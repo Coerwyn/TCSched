@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Demo events for the coming week (only added when there are no events yet).
+      Seed__SampleEvents: "true"
+      # To scan QR codes from a phone, open the app via your machine's LAN address
+      # (e.g. http://192.168.1.20:8080) so the QR code encodes that address.
+      # Optionally pin the link used inside .ics files:
+      # Store__PublicBaseUrl: "http://192.168.1.20:8080"
+    volumes:
+      - tcsched-data:/data
+
+volumes:
+  tcsched-data:

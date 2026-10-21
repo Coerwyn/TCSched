@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/node_modules/
+web/dist/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+.git/
+.claude/
+.vs/
+.vscode/
+tests/

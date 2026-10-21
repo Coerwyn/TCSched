@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using TCSched.Api.Configuration;
 using TCSched.Api.Domain;
 
 namespace TCSched.Api.Data;
@@ -10,6 +11,9 @@ public sealed class SeedOptions
 
     /// <summary>Path to the template seed file. Relative paths resolve from the app's base directory.</summary>
     public string TemplatesPath { get; set; } = Path.Combine("Templates", "templates.json");
+
+    /// <summary>Add demo events for the coming week when the database has no events. Off by default.</summary>
+    public bool SampleEvents { get; set; }
 }
 
 public static class DbInitializer
@@ -33,6 +37,13 @@ public static class DbInitializer
 
         var added = await SeedTemplatesAsync(db, LoadTemplates(path), ct);
         logger.LogInformation("Template seed: {Added} added from {Path}", added, path);
+
+        if (seed.SampleEvents)
+        {
+            var clock = scope.ServiceProvider.GetRequiredService<StoreClock>();
+            var events = await SampleData.SeedAsync(db, clock, ct);
+            logger.LogInformation("Sample events: {Added} added (only runs when there are no events)", events);
+        }
     }
 
     /// <summary>Reads and validates the seed file. Any invalid template stops startup.</summary>

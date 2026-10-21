@@ -35,8 +35,15 @@ public sealed class StoreClock(IOptions<StoreOptions> options, TimeProvider time
             return false;
         }
 
-        utc = TimeZoneInfo.ConvertTimeToUtc(wall, TimeZone);
+        utc = LocalToUtc(wall);
         error = null;
         return true;
     }
+
+    /// <summary>Store-local wall time → UTC. Ambiguous (fall-back) times resolve to standard time.</summary>
+    public DateTime LocalToUtc(DateTime wall) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(wall, DateTimeKind.Unspecified), TimeZone);
+
+    /// <summary>Today's date on the store's clock.</summary>
+    public DateOnly LocalToday => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(UtcNow, TimeZone));
 }

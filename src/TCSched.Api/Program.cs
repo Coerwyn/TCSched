@@ -46,6 +46,9 @@ api.MapEventEndpoints();
 api.MapRegistrationEndpoints();
 api.MapIcsEndpoints();
 
+// Unknown /api paths get a JSON 404 instead of the SPA's index.html.
+app.MapFallback("/api/{**rest}", () => ApiProblems.NotFound("API endpoint"));
+
 // Unknown non-API paths go to the SPA so client-side routes like /e/{id} work on refresh.
 app.MapFallbackToFile("index.html");
 
