@@ -8,7 +8,7 @@ A small web app for a game store organizer to schedule trading card game events 
 
 ### Docker (one command)
 
-```bash
+```shell
 docker compose up --build
 ```
 
@@ -16,14 +16,19 @@ Open http://localhost:8080. Some demo events for the coming week are added on fi
 
 ### Without Docker
 
-Requires the .NET 10 SDK and Node 20.19+ (or 22.12+). Run each command in its own terminal from the repo root:
+Requires the .NET 10 SDK and Node 20.19+ (or 22.12+). Use two terminals, both from the repo root. The commands work in any shell (PowerShell, cmd, bash, zsh).
 
-```bash
+Terminal 1, the API:
+
+```shell
 dotnet run --project src/TCSched.Api
 ```
 
-```bash
-npm --prefix web install && npm --prefix web run dev
+Terminal 2, the web app (run the install once, then start the dev server):
+
+```shell
+npm --prefix web install
+npm --prefix web run dev
 ```
 
 Open http://localhost:5173. The API runs on :5080, and Vite forwards `/api` requests to it. Demo events are added in Development mode.
@@ -34,7 +39,7 @@ The QR code encodes the address you opened the organizer page with, and a phone 
 
 ### Tests
 
-```bash
+```shell
 dotnet test
 ```
 
@@ -108,7 +113,7 @@ Games (Magic: The Gathering, Pokémon TCG, Disney Lorcana) are data, not code. T
 
 An opt-in command so JSON changes can be applied on purpose, never by accident at startup:
 
-```bash
+```shell
 dotnet run --project src/TCSched.Api -- templates sync --dry-run
 ```
 
