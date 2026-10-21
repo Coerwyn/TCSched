@@ -125,6 +125,19 @@ Unique index: `(EventId, NormalizedName)`.
 
 **Why this is safe under concurrency:** the check and the increment happen in one statement, so two requests can't both see "1 seat left". There's no read-then-write window. SQLite only lets one writer in at a time, and Microsoft.Data.Sqlite's busy timeout makes the next writer wait instead of failing. The same SQL is also correct on Postgres or SQL Server under row locking, so we don't rely on SQLite's single writer. The CHECK constraint is a backstop in case a future code path skips the conditional update.
 
+**When the claim is refused**, a follow-up read picks the clearest message: event missing → `404`; this name already registered → `DUPLICATE_REGISTRATION` (more useful than "full" for someone scanning again); event started → `EVENT_STARTED`; otherwise → `EVENT_FULL`. That read only chooses the message. The `UPDATE` already decided whether to accept the registration.
+
+**Evidence** (`LastSeatRaceTests`): the tests send concurrent requests through a barrier, each against its own temp-file DB. They passed 8 out of 8 repeated runs. As a check, we temporarily swapped in a naive "read count → check in C# → save" version and ran the same tests:
+
+| Scenario | Correct (conditional UPDATE) | Naive read-then-write |
+|---|---|---|
+| 4 seats, 50 concurrent | 4 registered | **7** registered |
+| 5 seats, 50 concurrent | 5 | **18** |
+| 30 seats, 100 concurrent | 30 | **54** |
+| 4 seats, 20× same name + 3 others | 4 rows, counter 4 | 4 rows, **counter 1** (lost updates) |
+
+The last row explains why the CHECK constraint alone isn't enough. With lost updates the counter goes *down*, so the constraint never fires and the real overfill goes unnoticed.
+
 *Alternatives considered:* `COUNT(*)` then insert (race-prone); app-level locks (break when there's more than one instance); serializable isolation plus retry (works, but more complex than one conditional update).
 
 **Duplicates:** same normalized name on the same event → 409. Known limitation: two different people with the same name collide; the second can add an initial ("Alex P."). This goes in the README.
@@ -188,7 +201,7 @@ All errors use RFC 7807 `ProblemDetails` with a machine-readable `code` extensio
 
 Backend integration tests (xUnit + `WebApplicationFactory`) run against a **temp-file SQLite DB**, not the EF in-memory provider. The in-memory provider has no transactions or constraints, so it would hide exactly the bugs we care about.
 
-1. **Last-seat race:** an event with capacity 5 gets 50 parallel registrations with distinct names → exactly 5 × 201 and 45 × `EVENT_FULL`. Also checks the DB: `RegisteredCount == 5 == COUNT(Registrations)`.
+1. **Last-seat race:** capacity 4/5/30 with 50/50/100 concurrent distinct names → exactly `capacity` × 201, the rest `EVENT_FULL`, and in the DB `RegisteredCount == capacity == COUNT(Registrations)`. A second test sends 20 concurrent copies of one name plus 3 others at a 4-seat event → 4 registered, 19 duplicates. Results are in §4.
 2. Full event → 409 `EVENT_FULL`; duplicate (`" alex  "` vs `"ALEX"`) → 409 `DUPLICATE_REGISTRATION`, and the seat count isn't consumed.
 3. Create validation: capacity > template max, capacity > 30, unknown template, invalid format.
 4. Extensibility: the test host seeds a fake 4th template → creating an event and registering for it work with no code change.

@@ -35,6 +35,7 @@ api.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 api.MapStoreEndpoints();
 api.MapTemplateEndpoints();
 api.MapEventEndpoints();
+api.MapRegistrationEndpoints();
 
 // Unknown non-API paths go to the SPA so client-side routes like /e/{id} work on refresh.
 app.MapFallbackToFile("index.html");

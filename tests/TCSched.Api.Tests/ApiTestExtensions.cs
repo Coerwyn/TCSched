@@ -17,6 +17,9 @@ public static class ApiTestExtensions
         return (await res.Content.ReadFromJsonAsync<EventDto>())!;
     }
 
+    public static Task<HttpResponseMessage> RegisterAsync(this HttpClient client, Guid eventId, string? name) =>
+        client.PostAsJsonAsync($"/api/events/{eventId}/registrations", new RegisterRequest(name));
+
     /// <summary>Reads a ProblemDetails body: its <c>code</c> and the field names in <c>errors</c>.</summary>
     public static async Task<(string? Code, string[] Fields)> ReadProblemAsync(this HttpResponseMessage res)
     {
