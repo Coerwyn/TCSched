@@ -195,7 +195,11 @@ All errors use RFC 7807 `ProblemDetails` with a machine-readable `code` extensio
 | `/organizer/events/:id` | EventDetailView | Details, seats X / Y, "needs N more" indicator, registrant list, QR, copy link, download `.ics` |
 | `/e/:id` | PublicEventView | Event info, seats left, name field → register; clear success / full / duplicate / started messages; form disabled when full |
 
-- Libraries: `vue-router`, `@fullcalendar/vue3`, `@fullcalendar/daygrid`, `@fullcalendar/list`, `qrcode`. Native `fetch`; no Pinia (no shared state worth a store).
+- **Calendar time zone:** FullCalendar needs a Luxon or moment-timezone plugin for named time zones; without one it falls back to UTC. So the calendar runs in `timeZone: 'UTC'` and is given each event as a **store-local wall time** string with no offset, converted with `Intl.DateTimeFormat`. It draws the store's clock in any browser with no extra dependency. Each fetch asks for one extra day on both sides to cover the UTC offset.
+- **Game colors** come from a hash of the template id into a palette, so a new game gets a color with no code change.
+- The organizer's event page refreshes every 5 s, so the seat count rises live while players scan.
+- **Dev proxy:** Vite forwards `/api` with `xfwd: true`, and the API trusts `X-Forwarded-Host`/`Proto` from loopback proxies. Without that, links the API builds (the URL inside the `.ics`) point at the API's own port (5080) instead of the address the player opened.
+- Libraries: `vue-router`, `@fullcalendar/vue3`, `@fullcalendar/daygrid`, `@fullcalendar/list`, `@fullcalendar/interaction` (click a day to create), `qrcode`. Native `fetch`; no Pinia (no shared state worth a store).
 - DTO types are written by hand in `src/api/types.ts`. OpenAPI codegen is listed under "next".
 - Styling is minimal (a classless CSS such as Pico or plain CSS). Polish is out of scope.
 
@@ -256,6 +260,7 @@ Phase 2 (§15) starts only after Phase 1 is committed and the end-to-end flow ha
 | 2026-10-21 | Claude Code | Requirements breakdown, design doc draft | — |
 | 2026-10-21 | Claude Code (Sonnet subagent) | Vue scaffold | `npm install` mixed FullCalendar majors (`@fullcalendar/vue3` 7.x pulled in its own core 7.x next to 6.x core/daygrid/list) → pinned all to 6.1.22. The first `ApiError` used constructor parameter properties, which `erasableSyntaxOnly` rejects (TS1294) → rewritten with explicit fields. |
 | 2026-10-21 | Claude Code (EF tooling) | `EventMinPlayersSnapshot` migration | The generated migration added `MinPlayers` with default 0 and then a `MinPlayers >= 1` check. On SQLite that table rebuild fails for any DB that already has events. Added a backfill from the template (clamped to capacity) before the constraint, and checked by upgrading a DB that had an event in it. |
+| 2026-10-21 | Claude Code | Vue pages + end-to-end browser test | The browser run found a bug in Claude's own code. The `.ics` registration link pointed at `localhost:5080` (the API), not `:5173`, because the Vite proxy rewrites `Host`. Fixed with forwarded headers plus a test. The unit tests had missed it because they talk to the API directly. |
 | 2026-10-21 | Claude Code | Data access choice | Defaulted to EF Core. The user questioned it as heavy for the project; we weighed Dapper and kept EF (decision recorded). |
 | | | | |
 
