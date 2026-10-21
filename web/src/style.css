@@ -1,0 +1,4 @@
+body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.5; }
+.container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+header.nav { border-bottom: 1px solid #ddd; }
+header.nav .container { display: flex; gap: 1rem; padding-block: .5rem; }
