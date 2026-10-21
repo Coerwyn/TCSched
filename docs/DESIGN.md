@@ -74,7 +74,7 @@ Seed values (initial — easy to tweak):
 
 **Template rules** live in one `GameTemplateValidator`: slug matches `^[a-z0-9-]{2,32}$`, Name is 1–60 chars, at least one format and no duplicate formats, DefaultFormat is one of Formats, 1 ≤ MinPlayers ≤ DefaultCapacity ≤ MaxCapacity ≤ 30, and duration is 15–720 minutes. Phase 1 uses it on the seed file; Phase 2's admin endpoints reuse it unchanged.
 
-**Seeding:** at startup, each template in `templates.json` is inserted **only if its Id doesn't exist yet**, and an invalid file stops startup. Insert-only (never overwrite) costs nothing now and means Phase 2's UI edits would survive restarts.
+**Seeding:** at startup, each template in `templates.json` is inserted **only if its Id doesn't exist yet**, and an invalid file stops startup. Insert-only (never overwrite) costs nothing now and means Phase 2's UI edits would survive restarts. Decided 2026-10-21: we kept per-template insert-only rather than seeding only an empty table, so "add a JSON entry and restart" still adds a game. The tradeoff: a template deleted from the DB comes back while it's still in the JSON. Applying JSON changes to existing templates is left to a future explicit `templates sync` command (§12).
 
 ### Event
 
@@ -210,6 +210,7 @@ Out of scope from the start: auth, payments, email, recurring events, editing/ca
 
 Our additional cuts (all will be listed in the README):
 - Template admin section (designed in §15; built only if time is left)
+- Explicit template sync command (`templates sync [--dry-run]`): an opt-in upsert from `templates.json` with a diff, and no deleting of templates in use. Startup seeding stays insert-only. Described in the README.
 - Waitlist / unregister / check-in
 - Rate limiting and bot protection on the public registration endpoint
 - Multi-store / per-event location
@@ -287,7 +288,7 @@ Sections, in order:
 3. **Design write-up (~1 page)**
    - *Capacity:* where it lives (template default/max → event snapshot → DB CHECK), the atomic conditional update, what happens on the last-seat race, the test that proves it, and how duplicates are handled.
    - *Templates:* the data-driven properties, no branching on game names, adding a 4th game today (one JSON entry), and what a non-card game would need.
-   - *Cuts & next:* the §12 list, honest about anything faked, and the planned admin section (below).
+   - *Cuts & next:* the §12 list, honest about anything faked, the planned admin section (below), and the template sync command (already drafted in the README's "Game templates" section).
 4. **What's next — admin section** (draft text; trim it if Phase 2 ships):
 
    > **Admin section for game templates.** Games are data in a `GameTemplates` table, seeded from `templates.json`. Today, adding a game means adding a JSON entry and restarting. The next step is an `/admin/templates` area with a list page and one create/edit form, backed by `POST/PUT/DELETE /api/templates` that reuse the same validator as the seed file. The groundwork is already in place: events keep their own copy of format, duration and capacity, so editing a template never changes events already scheduled; seeding is insert-only, so admin edits survive restarts; and delete would be refused (`409 TEMPLATE_IN_USE`) while events use a template, with archiving after that. Estimated at about 30–40 minutes; left out to keep the timebox on the core flow.
