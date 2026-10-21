@@ -36,6 +36,7 @@ api.MapStoreEndpoints();
 api.MapTemplateEndpoints();
 api.MapEventEndpoints();
 api.MapRegistrationEndpoints();
+api.MapIcsEndpoints();
 
 // Unknown non-API paths go to the SPA so client-side routes like /e/{id} work on refresh.
 app.MapFallbackToFile("index.html");

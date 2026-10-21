@@ -12,4 +12,10 @@ public sealed class StoreOptions
 
     /// <summary>IANA time zone id, e.g. "America/Chicago". Organizer input is interpreted in this zone.</summary>
     [Required] public string TimeZone { get; set; } = "";
+
+    /// <summary>
+    /// Base URL players use (for the registration link inside the .ics). Optional: when empty,
+    /// the request's own scheme and host are used.
+    /// </summary>
+    public string? PublicBaseUrl { get; set; }
 }

@@ -175,7 +175,9 @@ All errors use RFC 7807 `ProblemDetails` with a machine-readable `code` extensio
 - The organizer enters **store-local wall time** with no offset. The server converts it to UTC with `TimeZoneInfo` (IANA ids work on Windows via ICU in .NET 6+). That way the browser's own time zone doesn't matter.
 - DST edges: a time skipped by "spring forward" (e.g. 02:30 on the change day) is rejected with a clear message. A time that happens twice ("fall back") resolves to standard time. An invalid `Store:TimeZone` stops startup.
 - The API returns UTC; the UI formats it with `Intl.DateTimeFormat(…, { timeZone: store.timeZone })`.
-- **ICS via Ical.Net:** `SUMMARY` = event name (plus game/format), `DTSTART`/`DTEND` in UTC (`Z`), `LOCATION` = store name + address, `DESCRIPTION` includes the registration URL, a stable `UID` = `{eventId}@tcsched`, `DTSTAMP`. Manually test the import in Google Calendar and Outlook.
+- **ICS via Ical.Net:** `SUMMARY` = event name (plus game/format), `DTSTART`/`DTEND` in UTC (`Z`), `LOCATION` = store name + address, `DESCRIPTION` includes the registration URL, a stable `UID` = `{eventId}@tcsched`, `DTSTAMP`, `METHOD:PUBLISH`, `URL` = the registration link. Download filename: `{event-name-slug}-{local date}.ics`.
+- The registration link inside the file uses `Store:PublicBaseUrl` if set, otherwise the request's own host. Through the Vite proxy that's `localhost:5173`, and in Docker the app's own port.
+- Checked: the tests parse the file back with Ical.Net and assert the raw `DTSTART:…Z` / `DTEND:…Z` lines for both CST and CDT dates. A manual look at the raw bytes confirmed CRLF line endings, folding at 75 bytes, and escaped commas and newlines. **Still to do by hand:** import a downloaded file into Google Calendar and Outlook.
 
 ## 8. QR & registration link
 
