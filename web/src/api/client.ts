@@ -2,28 +2,38 @@ import type { ProblemDetails } from './types'
 
 const BASE = '/api'
 
+/** A non-2xx API response. `code` is the API's machine-readable error code (e.g. EVENT_FULL). */
 export class ApiError extends Error {
   status: number
   code: string | undefined
   title: string
   detail: string | undefined
+  /** Validation errors keyed by request field name (camelCase). */
+  errors: Record<string, string[]>
 
-  constructor(status: number, code: string | undefined, title: string, detail: string | undefined) {
-    super(detail || title)
+  constructor(status: number, problem: ProblemDetails | undefined, fallbackTitle: string) {
+    const title = problem?.title ?? fallbackTitle
+    super(problem?.detail || title)
     this.name = 'ApiError'
     this.status = status
-    this.code = code
+    this.code = problem?.code
     this.title = title
-    this.detail = detail
+    this.detail = problem?.detail
+    this.errors = problem?.errors ?? {}
   }
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(BASE + path, {
-    method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+  let res: Response
+  try {
+    res = await fetch(BASE + path, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, { code: 'NETWORK' }, "Can't reach the server. Check your connection and try again.")
+  }
   if (!res.ok) {
     let problem: ProblemDetails | undefined
     try {
@@ -31,12 +41,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     } catch {
       // non-JSON error body
     }
-    throw new ApiError(
-      problem?.status ?? res.status,
-      problem?.code,
-      problem?.title ?? res.statusText ?? 'Request failed',
-      problem?.detail,
-    )
+    throw new ApiError(res.status, problem, res.statusText || 'Request failed')
   }
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
