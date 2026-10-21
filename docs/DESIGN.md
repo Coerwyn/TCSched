@@ -178,7 +178,7 @@ All errors use RFC 7807 `ProblemDetails` with a machine-readable `code` extensio
 - The API returns UTC; the UI formats it with `Intl.DateTimeFormat(…, { timeZone: store.timeZone })`.
 - **ICS via Ical.Net:** `SUMMARY` = event name (plus game/format), `DTSTART`/`DTEND` in UTC (`Z`), `LOCATION` = store name + address, `DESCRIPTION` includes the registration URL, a stable `UID` = `{eventId}@tcsched`, `DTSTAMP`, `METHOD:PUBLISH`, `URL` = the registration link. Download filename: `{event-name-slug}-{local date}.ics`.
 - The registration link inside the file uses `Store:PublicBaseUrl` if set, otherwise the request's own host. Through the Vite proxy that's `localhost:5173`, and in Docker the app's own port.
-- Checked: the tests parse the file back with Ical.Net and assert the raw `DTSTART:…Z` / `DTEND:…Z` lines for both standard-time (January) and daylight-time (July) dates. A manual look at the raw bytes confirmed CRLF line endings, folding at 75 bytes, and escaped commas and newlines. **Still to do by hand:** import a downloaded file into Google Calendar and Outlook.
+- Checked: the tests parse the file back with Ical.Net and assert the raw `DTSTART:…Z` / `DTEND:…Z` lines for both standard-time (January) and daylight-time (July) dates. A manual look at the raw bytes confirmed CRLF line endings, folding at 75 bytes, and escaped commas and newlines. **Tested by hand:** importing a downloaded file into Outlook on the web worked. Google Calendar import wasn't tried.
 
 ## 8. QR & registration link
 

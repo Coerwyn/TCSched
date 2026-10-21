@@ -87,11 +87,13 @@ More detail: [Game templates](#game-templates) below and [docs/DESIGN.md](docs/D
 
 **Faked or simplified:** one store, configured in `appsettings.json`; no auth, so `/organizer` is open (a single trusted organizer is assumed); demo data is seeded; registration needs only a name. The UI is plain on purpose.
 
+**Tested by hand:** the full create → calendar → register → duplicate → full flow in a browser, and importing a downloaded `.ics` file into Outlook on the web, which worked. Google Calendar import wasn't tried.
+
 **Testing I faked:**
 - **QR scanning:** my phone's camera decoded the QR code to the correct registration URL, but I couldn't open that URL from the phone. I also opened the same URL in a separate browser tab, the way a phone would after scanning.
 - **Docker deployment:** `docker compose up` was not run, because I don't have Docker installed. Instead I ran the same Release publish output with the built SPA in `wwwroot`, in Production mode on port 8080 with the container's environment variables. Every SPA route, static assets, the API, the JSON 404 for unknown API paths and demo seeding all worked. The image build itself (Node and .NET stages, the non-root user, the `/data` volume) has not been exercised.
 
-**Cut:** editing or cancelling events, unregistering, waitlists, check-in, rate limiting and bot protection on the public registration endpoint, frontend unit and e2e tests (the API has 92 integration tests, and the UI flow was checked by hand in a browser), OpenAPI-generated TS types, and an accessibility pass.
+**Cut:** editing or cancelling events, unregistering, waitlists, check-in, rate limiting and bot protection on the public registration endpoint, frontend unit and e2e tests (the API has 92 integration tests, and the UI flow was checked by hand in a browser), OpenAPI-generated TS types, an accessibility pass, and making the UI look nicer (a proper visual design beyond the current minimal styling).
 
 **Next, in order:**
 1. **Admin section for game templates.** An `/admin/templates` list page and one create/edit form, backed by `POST/PUT/DELETE /api/templates`, reusing the startup validator. The groundwork is already there: events copy their template values, so edits never change scheduled events; seeding is insert-only, so admin edits survive restarts; deleting would be refused (`409 TEMPLATE_IN_USE`) while events use a template, with archiving after that. Designed in [docs/DESIGN.md §15](docs/DESIGN.md).
