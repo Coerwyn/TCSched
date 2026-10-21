@@ -82,6 +82,10 @@ More detail: [Game templates](#game-templates) below and [docs/DESIGN.md](docs/D
 
 **Faked or simplified:** one store, configured in `appsettings.json`; no auth, so `/organizer` is open (a single trusted organizer is assumed); demo data is seeded; registration needs only a name. The UI is plain on purpose.
 
+**Testing I faked:**
+- **QR scanning:** never done with a real phone camera. Instead I checked that the QR image encodes the registration URL and opened that URL in a separate browser tab, the way a phone would after scanning. Reaching the app from a phone over the LAN is documented above but not verified.
+- **Docker deployment:** `docker compose up` was not run, because Docker wasn't available on the build machine. Instead I ran the same Release publish output with the built SPA in `wwwroot`, in Production mode on port 8080 with the container's environment variables. Every SPA route, static assets, the API, the JSON 404 for unknown API paths and demo seeding all worked. The image build itself (Node and .NET stages, the non-root user, the `/data` volume) has not been exercised.
+
 **Cut:** editing or cancelling events, unregistering, waitlists, check-in, rate limiting and bot protection on the public registration endpoint, frontend unit and e2e tests (the API has 69 integration tests, and the UI flow was checked by hand in a browser), OpenAPI-generated TS types, and an accessibility pass.
 
 **Next, in order:**
