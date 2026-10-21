@@ -491,3 +491,6 @@ node_modules/
 web/dist/
 # Built SPA copied into the API
 src/TCSched.Api/wwwroot/
+
+# Local Claude Code tooling
+.claude/

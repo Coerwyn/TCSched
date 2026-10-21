@@ -50,6 +50,19 @@ public class IcsTests(TestAppFactory factory) : IClassFixture<TestAppFactory>
     }
 
     [Fact]
+    public async Task Registration_link_follows_the_forwarded_host_from_the_dev_proxy()
+    {
+        var ev = await _client.CreateEventOkAsync(new("FNM", "mtg", null, "2027-01-15T18:00", null));
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/events/{ev.Id}/calendar.ics");
+        req.Headers.Add("X-Forwarded-Host", "192.168.1.20:5173");
+        req.Headers.Add("X-Forwarded-Proto", "http");
+
+        var text = await (await _client.SendAsync(req)).Content.ReadAsStringAsync();
+
+        Assert.Equal(new Uri($"http://192.168.1.20:5173/e/{ev.Id}"), Calendar.Load(text)!.Events.Single().Url);
+    }
+
+    [Fact]
     public async Task Unknown_event_returns_404()
     {
         var res = await _client.GetAsync($"/api/events/{Guid.NewGuid()}/calendar.ics");

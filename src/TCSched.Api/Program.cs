@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using TCSched.Api.Configuration;
 using TCSched.Api.Data;
@@ -22,6 +23,13 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 var app = builder.Build();
 
 await DbInitializer.InitializeAsync(app.Services);
+
+// Trust X-Forwarded-Host/Proto from a local proxy (the Vite dev server) so request-based
+// links use the address the player actually opened. Only loopback proxies are trusted by default.
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto,
+});
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
