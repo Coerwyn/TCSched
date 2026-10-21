@@ -47,7 +47,7 @@ dotnet test
 3. **Event page:** seats bar, live player list, QR code, copy link, **Add to calendar (.ics)**.
 4. **Scan or open the link** (`/e/{id}`): enter a name and register. Try the same name again (duplicate), then fill the event and try once more (full).
 
-All times are entered and shown on the **store's clock** (`Store:TimeZone` in `appsettings.json`, default `America/Chicago`), whatever time zone the browser is in. The create form shows the store's zone and current time, and warns when it differs from your computer's. The game selected by default is store configuration too (`Store:DefaultGameTemplateId`, default `mtg`), so no game id is hard-coded in the UI.
+All times are entered and shown on the **store's clock** (`Store:TimeZone` in `appsettings.json`, default `America/Los_Angeles`), whatever time zone the browser is in. The create form shows the store's zone and current time, and warns when it differs from your computer's. The game selected by default is store configuration too (`Store:DefaultGameTemplateId`, default `mtg`), so no game id is hard-coded in the UI.
 
 ## Design write-up
 

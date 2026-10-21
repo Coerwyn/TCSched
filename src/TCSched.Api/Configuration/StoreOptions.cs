@@ -10,7 +10,7 @@ public sealed class StoreOptions
     [Required] public string Name { get; set; } = "";
     [Required] public string Address { get; set; } = "";
 
-    /// <summary>IANA time zone id, e.g. "America/Chicago". Organizer input is interpreted in this zone.</summary>
+    /// <summary>IANA time zone id, e.g. "America/Los_Angeles". Organizer input is interpreted in this zone.</summary>
     [Required] public string TimeZone { get; set; } = "";
 
     /// <summary>

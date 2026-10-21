@@ -13,7 +13,7 @@ export interface ProblemDetails {
 export interface Store {
   name: string
   address: string
-  /** IANA time zone, e.g. "America/Chicago". All times are shown in this zone. */
+  /** IANA time zone, e.g. "America/Los_Angeles". All times are shown in this zone. */
   timeZone: string
   /** Game pre-selected on the create form; falls back to the first template if unset/unknown. */
   defaultGameTemplateId?: string | null

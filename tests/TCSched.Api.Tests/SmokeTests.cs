@@ -29,7 +29,7 @@ public class SmokeTests(TestAppFactory factory) : IClassFixture<TestAppFactory>
         var store = await factory.CreateClient().GetFromJsonAsync<StoreDto>("/api/store");
 
         Assert.NotNull(store);
-        Assert.Equal("America/Chicago", store.TimeZone);
+        Assert.Equal("America/Los_Angeles", store.TimeZone);
         Assert.Equal("mtg", store.DefaultGameTemplateId);
         Assert.False(string.IsNullOrWhiteSpace(store.Address));
     }

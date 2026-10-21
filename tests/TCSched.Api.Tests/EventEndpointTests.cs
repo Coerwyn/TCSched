@@ -33,9 +33,9 @@ public class EventEndpointTests(TestAppFactory factory) : IClassFixture<TestAppF
     }
 
     [Theory]
-    // Store is America/Chicago: CST (UTC-6) in January, CDT (UTC-5) in July.
-    [InlineData("2027-01-15T18:00", "2027-01-16T00:00:00Z", "2027-01-16T04:00:00Z")]
-    [InlineData("2027-07-15T18:00", "2027-07-15T23:00:00Z", "2027-07-16T03:00:00Z")]
+    // Store is America/Los_Angeles: PST (UTC-8) in January, PDT (UTC-7) in July.
+    [InlineData("2027-01-15T18:00", "2027-01-16T02:00:00Z", "2027-01-16T06:00:00Z")]
+    [InlineData("2027-07-15T18:00", "2027-07-16T01:00:00Z", "2027-07-16T05:00:00Z")]
     public async Task Start_time_is_store_local_and_converted_to_utc(string local, string expectedStart, string expectedEnd)
     {
         var ev = await _client.CreateEventOkAsync(Fnm(startsAtLocal: local));
@@ -68,8 +68,8 @@ public class EventEndpointTests(TestAppFactory factory) : IClassFixture<TestAppF
         { Fnm(template: "pokemon", format: "Commander"), "format" }, // MTG format on a Pokémon event
         { Fnm(startsAtLocal: "2020-01-01T18:00"), "startsAtLocal" },  // in the past
         { Fnm(startsAtLocal: "next friday"), "startsAtLocal" },
-        { Fnm(startsAtLocal: "2027-01-15T18:00:00-06:00"), "startsAtLocal" }, // offsets not accepted
-        { Fnm(startsAtLocal: "2027-03-14T02:30"), "startsAtLocal" },  // skipped by DST in Chicago
+        { Fnm(startsAtLocal: "2027-01-15T18:00:00-08:00"), "startsAtLocal" }, // offsets not accepted
+        { Fnm(startsAtLocal: "2027-03-14T02:30"), "startsAtLocal" },  // skipped by DST in Los Angeles
         { Fnm(template: null), "gameTemplateId" },
     };
 
@@ -91,7 +91,7 @@ public class EventEndpointTests(TestAppFactory factory) : IClassFixture<TestAppF
         var res = await _client.CreateEventAsync(Fnm(startsAtLocal: "2020-01-01T18:00"));
 
         var body = await res.Content.ReadAsStringAsync();
-        Assert.Contains("at the store (America/Chicago)", body);
+        Assert.Contains("at the store (America/Los_Angeles)", body);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class EventEndpointTests(TestAppFactory factory) : IClassFixture<TestAppF
         await _client.CreateEventOkAsync(Fnm(startsAtLocal: "2028-03-05T18:00", name: "Next month"));
 
         var feb = await _client.GetFromJsonAsync<List<EventDto>>(
-            "/api/events?from=2028-02-01T00:00:00-06:00&to=2028-03-01T00:00:00-06:00");
+            "/api/events?from=2028-02-01T00:00:00-08:00&to=2028-03-01T00:00:00-08:00");
 
         Assert.Equal([early.Id, late.Id], feb!.Select(e => e.Id));
     }
