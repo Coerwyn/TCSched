@@ -45,6 +45,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                     $"\"Capacity\" BETWEEN 1 AND {EventRules.MaxCapacity}");
                 tb.HasCheckConstraint("CK_Events_RegisteredCount",
                     "\"RegisteredCount\" >= 0 AND \"RegisteredCount\" <= \"Capacity\"");
+                tb.HasCheckConstraint("CK_Events_MinPlayers",
+                    "\"MinPlayers\" >= 1 AND \"MinPlayers\" <= \"Capacity\"");
             });
         });
 

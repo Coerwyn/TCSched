@@ -40,6 +40,9 @@ namespace TCSched.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("MinPlayers")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -60,6 +63,8 @@ namespace TCSched.Api.Data.Migrations
                     b.ToTable("Events", t =>
                         {
                             t.HasCheckConstraint("CK_Events_Capacity", "\"Capacity\" BETWEEN 1 AND 30");
+
+                            t.HasCheckConstraint("CK_Events_MinPlayers", "\"MinPlayers\" >= 1 AND \"MinPlayers\" <= \"Capacity\"");
 
                             t.HasCheckConstraint("CK_Events_RegisteredCount", "\"RegisteredCount\" >= 0 AND \"RegisteredCount\" <= \"Capacity\"");
                         });

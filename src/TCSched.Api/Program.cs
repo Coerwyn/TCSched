@@ -10,7 +10,10 @@ builder.Services
     .AddOptions<StoreOptions>()
     .Bind(builder.Configuration.GetSection(StoreOptions.SectionName))
     .ValidateDataAnnotations()
+    .Validate(o => TimeZoneInfo.TryFindSystemTimeZoneById(o.TimeZone, out _), "Store:TimeZone is not a known time zone id.")
     .ValidateOnStart();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<StoreClock>();
 
 // Read the connection string when the context is resolved, not at startup, so tests can override it.
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
@@ -31,6 +34,7 @@ var api = app.MapGroup("/api");
 api.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 api.MapStoreEndpoints();
 api.MapTemplateEndpoints();
+api.MapEventEndpoints();
 
 // Unknown non-API paths go to the SPA so client-side routes like /e/{id} work on refresh.
 app.MapFallbackToFile("index.html");

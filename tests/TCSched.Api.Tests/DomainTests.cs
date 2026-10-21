@@ -29,6 +29,7 @@ public class DatabaseConstraintTests(TestAppFactory factory) : IClassFixture<Tes
         StartsAtUtc = DateTime.UtcNow.AddDays(1),
         DurationMinutes = 240,
         Capacity = capacity,
+        MinPlayers = 1,
         CreatedAtUtc = DateTime.UtcNow,
     };
 

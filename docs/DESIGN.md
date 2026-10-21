@@ -87,12 +87,13 @@ Seed values (initial — easy to tweak):
 | StartsAtUtc | DateTime (UTC) | Converted from store-local input |
 | DurationMinutes | int | Copied from the template at creation |
 | Capacity | int | MinPlayers ≤ cap ≤ min(template.MaxCapacity, 30) |
+| MinPlayers | int | Copied from the template at creation; drives "needs N more" |
 | RegisteredCount | int | Running count of registrations; guarded by the conditional update (§4) |
 | CreatedAtUtc | DateTime | |
 
-DB constraints: `CHECK (Capacity BETWEEN 1 AND 30)` and `CHECK (RegisteredCount >= 0 AND RegisteredCount <= Capacity)`.
+DB constraints: `CHECK (Capacity BETWEEN 1 AND 30)`, `CHECK (RegisteredCount >= 0 AND RegisteredCount <= Capacity)` and `CHECK (MinPlayers >= 1 AND MinPlayers <= Capacity)`.
 
-**Snapshot, not reference:** format, duration and capacity are copied onto the event when it's created. The template only supplies defaults and limits at that moment. So a template can change (by editing the JSON now, or in the admin section later) without changing or invalidating events already scheduled.
+**Snapshot, not reference:** format, duration, capacity and min players are copied onto the event when it's created. The template only supplies defaults and limits at that moment. So a template can change (by editing the JSON now, or in the admin section later) without changing or invalidating events already scheduled.
 
 ### Registration
 
@@ -159,6 +160,7 @@ All errors use RFC 7807 `ProblemDetails` with a machine-readable `code` extensio
 
 - The store's time zone is configured as IANA (e.g. `America/Chicago`) in `appsettings.json` / env.
 - The organizer enters **store-local wall time** with no offset. The server converts it to UTC with `TimeZoneInfo` (IANA ids work on Windows via ICU in .NET 6+). That way the browser's own time zone doesn't matter.
+- DST edges: a time skipped by "spring forward" (e.g. 02:30 on the change day) is rejected with a clear message. A time that happens twice ("fall back") resolves to standard time. An invalid `Store:TimeZone` stops startup.
 - The API returns UTC; the UI formats it with `Intl.DateTimeFormat(…, { timeZone: store.timeZone })`.
 - **ICS via Ical.Net:** `SUMMARY` = event name (plus game/format), `DTSTART`/`DTEND` in UTC (`Z`), `LOCATION` = store name + address, `DESCRIPTION` includes the registration URL, a stable `UID` = `{eventId}@tcsched`, `DTSTAMP`. Manually test the import in Google Calendar and Outlook.
 
@@ -237,6 +239,8 @@ Phase 2 (§15) starts only after Phase 1 is committed and the end-to-end flow ha
 |---|---|---|---|
 | 2026-10-21 | Claude Code | Requirements breakdown, design doc draft | — |
 | 2026-10-21 | Claude Code (Sonnet subagent) | Vue scaffold | `npm install` mixed FullCalendar majors (`@fullcalendar/vue3` 7.x pulled in its own core 7.x next to 6.x core/daygrid/list) → pinned all to 6.1.22. The first `ApiError` used constructor parameter properties, which `erasableSyntaxOnly` rejects (TS1294) → rewritten with explicit fields. |
+| 2026-10-21 | Claude Code (EF tooling) | `EventMinPlayersSnapshot` migration | The generated migration added `MinPlayers` with default 0 and then a `MinPlayers >= 1` check. On SQLite that table rebuild fails for any DB that already has events. Added a backfill from the template (clamped to capacity) before the constraint, and checked by upgrading a DB that had an event in it. |
+| 2026-10-21 | Claude Code | Data access choice | Defaulted to EF Core. The user questioned it as heavy for the project; we weighed Dapper and kept EF (decision recorded). |
 | | | | |
 
 ## 15. Phase 2 — Admin section: game templates

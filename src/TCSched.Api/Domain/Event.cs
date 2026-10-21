@@ -1,8 +1,8 @@
 namespace TCSched.Api.Domain;
 
 /// <summary>
-/// A scheduled event. Format, duration and capacity are copied from the template when the
-/// event is created, so later template changes never alter an existing event.
+/// A scheduled event. Format, duration, capacity and min players are copied from the template
+/// when the event is created, so later template changes never alter an existing event.
 /// </summary>
 public sealed class Event
 {
@@ -16,6 +16,9 @@ public sealed class Event
     public DateTime StartsAtUtc { get; set; }
     public int DurationMinutes { get; set; }
     public int Capacity { get; set; }
+
+    /// <summary>Players needed for the event to run (snapshot of the template's MinPlayers).</summary>
+    public int MinPlayers { get; set; }
 
     /// <summary>
     /// Seats taken. Only changed by the conditional update in the registration flow, and kept
