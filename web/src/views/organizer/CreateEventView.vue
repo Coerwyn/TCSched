@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, ApiError, type GameTemplate, type Store } from '../../api'
 import { errorMessage, fieldError } from '../../lib/errors'
-import { formatTime, storeToday, wallTimePlus, zoneName } from '../../lib/time'
+import { formatTime, storeToday, storeWallToDate, zoneName } from '../../lib/time'
 
 const MAX_CAPACITY = 30 // global limit; templates may set a lower one
 
@@ -28,8 +28,17 @@ const form = reactive({
 const template = computed(() => templates.value.find((t) => t.id === form.gameTemplateId))
 const maxCapacity = computed(() => Math.min(template.value?.maxCapacity ?? MAX_CAPACITY, MAX_CAPACITY))
 const startsAtLocal = computed(() => (form.date && form.time ? `${form.date}T${form.time}` : ''))
+/** The real instant the event would start, worked out in the store's zone. */
+const startsAt = computed(() =>
+  store.value && startsAtLocal.value ? storeWallToDate(startsAtLocal.value, store.value.timeZone) : undefined)
+/** Start + duration as instants (what the server stores), so a DST change mid-event is handled. */
+const endsAtDate = computed(() =>
+  startsAt.value && template.value
+    ? new Date(startsAt.value.getTime() + template.value.defaultDurationMinutes * 60_000) : undefined)
 const endsAt = computed(() =>
-  template.value && startsAtLocal.value ? wallTimePlus(startsAtLocal.value, template.value.defaultDurationMinutes) : '')
+  endsAtDate.value && store.value
+    ? `${formatTime(endsAtDate.value.toISOString(), store.value.timeZone)} ${zoneName(store.value.timeZone, endsAtDate.value)}`
+    : '')
 
 // Times are entered on the store's clock, which may differ from the browser's. Show the
 // store's zone and current time so "6:00 PM" is unambiguous; refresh it every 30 s.
@@ -37,7 +46,10 @@ const now = ref(new Date())
 const clockTimer = setInterval(() => (now.value = new Date()), 30_000)
 onUnmounted(() => clearInterval(clockTimer))
 const storeZone = computed(() => (store.value ? zoneName(store.value.timeZone, now.value) : ''))
-const storeZoneLong = computed(() => (store.value ? zoneName(store.value.timeZone, now.value, 'long') : ''))
+const storeZoneGeneric = computed(() => (store.value ? zoneName(store.value.timeZone, now.value, 'longGeneric') : ''))
+/** PST or PDT for the date and time being entered (falls back to "now" until both are set). */
+const startZone = computed(() =>
+  store.value ? zoneName(store.value.timeZone, startsAt.value ?? now.value) : '')
 const storeNow = computed(() => (store.value ? formatTime(now.value.toISOString(), store.value.timeZone) : ''))
 const browserDiffers = computed(() =>
   !!store.value && Intl.DateTimeFormat().resolvedOptions().timeZone !== store.value.timeZone)
@@ -124,18 +136,18 @@ async function submit() {
         <input v-model="form.date" type="date" required />
       </label>
       <label>
-        <span>Start time <span v-if="storeZone" class="muted">({{ storeZone }})</span></span>
+        <span>Start time <span v-if="startZone" class="muted">({{ startZone }})</span></span>
         <input v-model="form.time" type="time" required />
       </label>
     </div>
     <p v-if="store" class="small" :class="{ notice: browserDiffers }">
-      Times are in the store's time zone, {{ storeZoneLong }} ({{ store.timeZone }}).
+      Times are in the store's time zone, {{ storeZoneGeneric }} ({{ store.timeZone }}).
       It's now <strong>{{ storeNow }} {{ storeZone }}</strong> at the store<span v-if="browserDiffers">,
       which differs from your computer's time zone</span>.
     </p>
     <span v-if="err('startsAtLocal')" class="error">{{ err('startsAtLocal') }}</span>
     <p v-if="template && store" class="muted small">
-      Runs {{ template.defaultDurationMinutes / 60 }} h<span v-if="endsAt">, until about {{ endsAt }} {{ storeZone }}</span>
+      Runs {{ template.defaultDurationMinutes / 60 }} h<span v-if="endsAt">, until about {{ endsAt }}</span>
     </p>
 
     <label v-if="template">

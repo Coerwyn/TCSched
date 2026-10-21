@@ -62,7 +62,7 @@ public static class EventEndpoints
             errors["startsAtLocal"] = [timeError!];
         else if (startsAtUtc <= clock.UtcNow)
             errors["startsAtLocal"] = [string.Create(CultureInfo.InvariantCulture,
-                $"Start time must be in the future. It's now {clock.LocalNow:ddd MMM d, h:mm tt} at the store ({clock.TimeZone.Id})."),
+                $"Start time must be in the future. It's now {clock.LocalNow:ddd MMM d, h:mm tt} {clock.ZoneAbbreviation(clock.UtcNow)} at the store ({clock.TimeZone.Id})."),
             ];
 
         if (string.IsNullOrWhiteSpace(req.GameTemplateId))

@@ -14,17 +14,27 @@ export function formatTime(utcIso: string, timeZone: string): string {
     .format(new Date(utcIso))
 }
 
-/** The zone's name at an instant: "PDT" (short) or "Pacific Daylight Time" (long). */
-export function zoneName(timeZone: string, at: Date = new Date(), style: 'short' | 'long' = 'short'): string {
+/**
+ * The zone's name at an instant: "PDT"/"PST" (short), "Pacific Daylight Time" (long), or
+ * "Pacific Time" (longGeneric, the same all year).
+ */
+export function zoneName(
+  timeZone: string, at: Date = new Date(), style: 'short' | 'long' | 'longGeneric' = 'short',
+): string {
   return new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: style })
     .formatToParts(at).find((p) => p.type === 'timeZoneName')?.value ?? timeZone
 }
 
-/** "Fri, Jan 15, 2027, 6:00 PM – 10:00 PM PST" */
+/**
+ * "Fri, Jan 15, 2027, 6:00 PM – 10:00 PM PST". If a DST change falls inside the event, each
+ * end gets its own zone: "Sat, Oct 31, 2026, 10:00 PM PDT – 1:00 AM PST".
+ */
 export function formatRange(startUtc: string, endUtc: string, timeZone: string): string {
-  const zone = new Intl.DateTimeFormat(undefined, { timeZone, timeZoneName: 'short' })
-    .formatToParts(new Date(startUtc)).find((p) => p.type === 'timeZoneName')?.value ?? ''
-  return `${formatDateTime(startUtc, timeZone)} – ${formatTime(endUtc, timeZone)} ${zone}`.trim()
+  const startZone = zoneName(timeZone, new Date(startUtc))
+  const endZone = zoneName(timeZone, new Date(endUtc))
+  const start = formatDateTime(startUtc, timeZone)
+  const end = formatTime(endUtc, timeZone)
+  return startZone === endZone ? `${start} – ${end} ${endZone}` : `${start} ${startZone} – ${end} ${endZone}`
 }
 
 /**
@@ -47,9 +57,26 @@ export function storeToday(timeZone: string): string {
   return toStoreWallTime(new Date().toISOString(), timeZone).slice(0, 10)
 }
 
-/** Adds minutes to a "YYYY-MM-DDTHH:mm" wall time and formats the result as "6:00 PM" (no zone math). */
-export function wallTimePlus(wall: string, minutes: number): string {
-  const d = new Date(`${wall}:00Z`)
-  d.setUTCMinutes(d.getUTCMinutes() + minutes)
-  return new Intl.DateTimeFormat(undefined, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' }).format(d)
+/** The zone's UTC offset in minutes at an instant (e.g. -420 for PDT). */
+function offsetMinutes(instantMs: number, timeZone: string): number {
+  const wallAsUtc = Date.parse(`${toStoreWallTime(new Date(instantMs).toISOString(), timeZone)}Z`)
+  return Math.round((wallAsUtc - instantMs) / 60_000)
+}
+
+/**
+ * The instant for a store-local wall time "YYYY-MM-DDTHH:mm" (the same rules the server uses):
+ * - normal times have exactly one match;
+ * - a time that happens twice (clocks fall back) resolves to standard time, the later instant;
+ * - a time that never happens (clocks spring forward) or bad input returns undefined.
+ */
+export function storeWallToDate(wall: string, timeZone: string): Date | undefined {
+  const wallAsUtc = Date.parse(`${wall}:00Z`)
+  if (Number.isNaN(wallAsUtc)) return undefined
+  // The zone's offsets within a day either side cover both sides of any DST change.
+  const day = 24 * 60 * 60_000
+  const offsets = new Set([offsetMinutes(wallAsUtc - day, timeZone), offsetMinutes(wallAsUtc + day, timeZone)])
+  const matches = [...offsets]
+    .map((o) => wallAsUtc - o * 60_000)
+    .filter((t) => toStoreWallTime(new Date(t).toISOString(), timeZone).slice(0, 16) === wall)
+  return matches.length ? new Date(Math.max(...matches)) : undefined
 }

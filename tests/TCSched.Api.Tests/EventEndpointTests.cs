@@ -91,7 +91,8 @@ public class EventEndpointTests(TestAppFactory factory) : IClassFixture<TestAppF
         var res = await _client.CreateEventAsync(Fnm(startsAtLocal: "2020-01-01T18:00"));
 
         var body = await res.Content.ReadAsStringAsync();
-        Assert.Contains("at the store (America/Los_Angeles)", body);
+        // e.g. "It's now Wed Oct 21, 4:12 PM PDT at the store (America/Los_Angeles)."
+        Assert.Matches(@"It's now \w{3} \w{3} \d{1,2}, \d{1,2}:\d{2} (AM|PM) P[DS]T at the store \(America/Los_Angeles\)\.", body);
     }
 
     [Fact]

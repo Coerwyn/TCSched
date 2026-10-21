@@ -44,6 +44,25 @@ public sealed class StoreClock(IOptions<StoreOptions> options, TimeProvider time
     public DateTime LocalToUtc(DateTime wall) =>
         TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(wall, DateTimeKind.Unspecified), TimeZone);
 
+    /// <summary>
+    /// Short zone name at an instant, e.g. "PST" in January and "PDT" in July. .NET has no
+    /// abbreviations, so this uses the initials of the localized name ("Pacific Daylight Time").
+    /// Falls back to the UTC offset ("UTC-07:00") when the name isn't plain words.
+    /// </summary>
+    public string ZoneAbbreviation(DateTime utc)
+    {
+        // Ask with the UTC instant: a local time like 1:30 AM on fall-back day is ambiguous,
+        // and .NET would treat it as standard time.
+        var instant = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+        var name = TimeZone.IsDaylightSavingTime(instant) ? TimeZone.DaylightName : TimeZone.StandardName;
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length >= 2 && words.All(w => w.All(char.IsLetter)))
+            return string.Concat(words.Select(w => char.ToUpperInvariant(w[0])));
+
+        var offset = TimeZone.GetUtcOffset(instant);
+        return $"UTC{(offset < TimeSpan.Zero ? "-" : "+")}{offset:hh\\:mm}";
+    }
+
     /// <summary>The current wall-clock time at the store.</summary>
     public DateTime LocalNow => TimeZoneInfo.ConvertTimeFromUtc(UtcNow, TimeZone);
 
