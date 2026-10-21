@@ -1,6 +1,6 @@
 # TCSched: TCG Event Calendar
 
-A small web app for a game store organizer to schedule trading card game events and for players to register by scanning a QR code. Capacity is enforced by the database, including when several people try to take the last seat at the same moment.
+A small web app for a game store organizer to schedule trading card game events and for players to register by scanning a QR code.
 
 **Stack:** Vue 3 + TypeScript (Vite) single-page app · ASP.NET Core (.NET 10) minimal API · EF Core + SQLite · Ical.Net (`.ics`) · `qrcode` · FullCalendar
 
